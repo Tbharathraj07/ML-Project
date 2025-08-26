@@ -29,17 +29,3 @@ threadpoolctl==3.6.0
 tzdata==2025.2
 Werkzeug==3.1.3
 xgboost==3.0.4
-
-# Dashboard and web app
-streamlit
-
-# Optional: if you want deep learning later
-tensorflow
-torch
-
-# Explicitly add core ML libs
-numpy
-pandas
-scikit-learn
-matplotlib
-seaborn
