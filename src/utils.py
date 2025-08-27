@@ -1,62 +1,64 @@
 import os
 import sys
-
-import numpy as np 
-import pandas as pd
-import dill
 import pickle
-from sklearn.metrics import r2_score
-from sklearn.model_selection import GridSearchCV
+import numpy as np
+from sklearn.metrics import accuracy_score, f1_score
 
 from src.exception import CustomException
 
-def save_object(file_path, obj):
+
+def save_object(file_path: str, obj):
+    """
+    Save any Python object to disk using pickle.
+    """
     try:
-        dir_path = os.path.dirname(file_path)
-
-        os.makedirs(dir_path, exist_ok=True)
-
-        with open(file_path, "wb") as file_obj:
-            pickle.dump(obj, file_obj)
-
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        with open(file_path, "wb") as f:
+            pickle.dump(obj, f)
     except Exception as e:
         raise CustomException(e, sys)
-    
-def evaluate_models(X_train, y_train,X_test,y_test,models,param):
+
+
+def load_object(file_path: str):
+    """
+    Load a Python object from disk using pickle.
+    """
     try:
-        report = {}
-
-        for i in range(len(list(models))):
-            model = list(models.values())[i]
-            para=param[list(models.keys())[i]]
-
-            gs = GridSearchCV(model,para,cv=3)
-            gs.fit(X_train,y_train)
-
-            model.set_params(**gs.best_params_)
-            model.fit(X_train,y_train)
-
-            #model.fit(X_train, y_train)  # Train model
-
-            y_train_pred = model.predict(X_train)
-
-            y_test_pred = model.predict(X_test)
-
-            train_model_score = r2_score(y_train, y_train_pred)
-
-            test_model_score = r2_score(y_test, y_test_pred)
-
-            report[list(models.keys())[i]] = test_model_score
-
-        return report
-
+        with open(file_path, "rb") as f:
+            return pickle.load(f)
     except Exception as e:
         raise CustomException(e, sys)
-    
-def load_object(file_path):
+
+
+def evaluate_models(X_train, y_train, X_test, y_test, models: dict):
+    """
+    Train and evaluate multiple models for multi-output classification.
+    Returns:
+        - model_report: {model_name: {"accuracy": float, "f1_score": float}}
+        - trained_models: {model_name: fitted_model}
+    """
     try:
-        with open(file_path, "rb") as file_obj:
-            return pickle.load(file_obj)
+        model_report = {}
+        trained_models = {}
+
+        for name, model in models.items():
+            # Fit the model
+            model.fit(X_train, y_train)
+
+            # Predict
+            y_pred = model.predict(X_test)
+
+            # Accuracy & F1 (micro-average for multi-label)
+            acc = accuracy_score(y_test, y_pred)
+            f1 = f1_score(y_test, y_pred, average="micro")
+
+            model_report[name] = {
+                "accuracy": acc,
+                "f1_score": f1
+            }
+            trained_models[name] = model
+
+        return model_report, trained_models
 
     except Exception as e:
         raise CustomException(e, sys)
